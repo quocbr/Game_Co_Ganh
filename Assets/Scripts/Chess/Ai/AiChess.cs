@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class AiChess : MonoBehaviour
@@ -111,7 +112,7 @@ public class AiChess : MonoBehaviour
 
     private void Think()
     {
-        maxDepth = 100;
+        maxDepth = 2;
         int depth = maxDepth-1;
         // winningValue = MiniMax(depth, true);
         //winningValue = AlphaBeta(depth, true, System.Int32.MinValue, System.Int32.MaxValue);
@@ -124,7 +125,7 @@ public class AiChess : MonoBehaviour
         if(depth == 0 || isGameOver())
         {
             // Static Evaluation Function
-            int value = _Evaluate();
+            int value = StaticEvaluationFunction();
             
             return value;
         }
@@ -216,9 +217,9 @@ public class AiChess : MonoBehaviour
                                 // We won't update NPCSelectedChessman, moveX and moveY in min turn
                                  if(depth == maxDepth-1)
                                  {
-                                     NPCSelectedChessman = chessman;
-                                     moveX = x;
-                                     moveY = y;
+                                     //NPCSelectedChessman = chessman;
+                                     //moveX = x;
+                                     //moveY = y;
                                  }
                             }
 
@@ -411,10 +412,11 @@ public class AiChess : MonoBehaviour
         return TotalScore;
     }
 
-    private int total = 0;
+    
 
     int _Evaluate()
     {
+        int total = 0;
         float pieceDifference = 0;
         float whiteWeight = 0;
         float blackWeight = 0;
@@ -423,13 +425,13 @@ public class AiChess : MonoBehaviour
         {
             Vector2 position = new Vector2((int)cm.CurrentX, (int)cm.CurrentY);
             //whiteWeight -= _weight.GetBoardWeight(position, "white");
-            total -= _weight.GetBoardWeight(position, "white");
+            total += _weight.GetBoardWeight(position, "white");
         }
         foreach (Chessman cm in _blackPieces)
         {
             Vector2 position = new Vector2((int)cm.CurrentX, (int)cm.CurrentY);
             //blackWeight += _weight.GetBoardWeight(position, "black");
-            total += _weight.GetBoardWeight(position, "black");
+            total -= _weight.GetBoardWeight(position, "black");
         }
         pieceDifference = (_blackScore + (blackWeight / 100)) - (_whiteScore + (whiteWeight / 100));
         //return Mathf.RoundToInt(pieceDifference * 100);
@@ -466,11 +468,10 @@ public class AiChess : MonoBehaviour
             //capturedChessman.chessman = opponent;
             //capturedChessman.Position = (x, y);
 
-        capturedChessman = dseat;
-        dseat.Clear();
+
 
         Chessmans[x, y] = null;
-        ActiveChessmans.Remove(opponent);
+        //ActiveChessmans.Remove(opponent);
         
         // Now moving
         Chessmans[chessman.CurrentX, chessman.CurrentY] = null;
@@ -478,7 +479,14 @@ public class AiChess : MonoBehaviour
         chessman.SetPosition(x, y);
         chessman.isMoved = true;
         Ganh(Chessmans[x, y]);
-        Chet(Chessmans[x, y].isWhite);
+        Chet(Chessmans[x, y].isWhite);      
+        
+        capturedChessman = new List<Chessman>();
+        foreach (var ob in dseat)
+        {
+            capturedChessman.Add(ob);
+        }
+        dseat.Clear();
 
         // Save the current state to the History Stack
         State currentState = new State();
@@ -511,7 +519,6 @@ public class AiChess : MonoBehaviour
         Chessmans[movedChessman.oldPosition.x, movedChessman.oldPosition.y] = chessman;
         Chessmans[movedChessman.newPosition.x, movedChessman.newPosition.y] = null;
         
-
         // Restore the captured piece to its position
         var opponent = capturedChessman;
         if(opponent.Count > 0)
@@ -519,6 +526,7 @@ public class AiChess : MonoBehaviour
             foreach (var chessman1 in opponent)
             {
                 Chessmans[chessman1.CurrentX, chessman1.CurrentY] = chessman1;
+                Chessmans[chessman1.CurrentX, chessman1.CurrentY].isWhite = !chessman1.isWhite;
                 chessman1.SetPosition(chessman1.CurrentX, chessman1.CurrentY);
                 ActiveChessmans.Add(chessman1);
             }
